@@ -1,4 +1,40 @@
 #!/bin/bash
+#
+# auto-nfs-backup
+#
+# Copyright (c) 2013-2014 FOXEL SA - http://foxel.ch
+# Please read <http://foxel.ch/license> for more information.
+#
+# Author(s):
+#
+#      Luc Deschenaux <l.deschenaux@foxel.ch>
+#
+# This file is part of the FOXEL project <http://foxel.ch>.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# Additional Terms:
+#
+#      You are required to preserve legal notices and author attributions in
+#      that material or in the Appropriate Legal Notices displayed by works
+#      containing it.
+#
+#      You are required to attribute the work as explained in the "Usage and
+#      Attribution" section of <http://foxel.ch/license>.
+
+[ -n "$DEBUG" ] && set -x
 export PATH=/usr/sbin:/usr/bin:/sbin:$PATH
 
 [ -n "$DEBUG" ] && set -x
@@ -10,6 +46,7 @@ BACKUP_MOUNTPOINT_IS_LOCAL=no
 BACKUP_DIR=backup
 BACKUP_GROUP=changeme
 SHAREGEX='^\/'$BACKUP_GROUP
+[ -n "$EXCLUDE_HOSTS" ] || EXCLUDE_HOSTS=""
 
 hostlist() {
   _PORT=$1
@@ -112,27 +149,6 @@ EOF
 mkdir -p $SHARE_BACKUP
 
 rdiff-backup $EXCLUDE \
---exclude '**.calib-tiff' \
---exclude '**.eqr-tiff' \
---exclude '**DECONV-RGB24*' \
---exclude 'ignorecase:**.tiff' \
---exclude '**.o' \
---exclude 'ignorecase:**.log' \
---exclude 'ignorecase:**.log-*' \
---exclude 'ignorecase:**.iso' \
---exclude 'ignorecase:**.avi' \
---exclude 'ignorecase:**.mkv' \
---exclude 'ignorecase:**.mpg' \
---exclude 'ignorecase:**.mp3' \
---exclude 'ignorecase:**.mp4' \
---exclude 'ignorecase:**.iso' \
---exclude 'ignorecase:**.m4a' \
---exclude 'ignorecase:**\.bin' \
---exclude 'ignorecase:**.deb' \
---exclude 'ignorecase:**/tmp' \
---exclude 'ignorecase:**/build' \
---exclude 'ignorecase:**_build' \
---exclude 'ignorecase:**.build' \
 --exclude-device-files \
 --exclude-fifos \
 --exclude-sockets \
@@ -165,7 +181,11 @@ hostlist $PORT $SUBNET | while read line ; do
       host_mac=$host_ip
     fi
   fi
-  [ "$host_name" = "gronas" ] && continue
+  for unwanted in "$EXCLUDE_HOSTS" ; do
+    [ "$host_name" = "$unwanted" ] && continue 2
+    [ "$host_ip" = "$unwanted" ] && continue 2
+    [ "$host_mac" = "$unwanted" ] && continue 2
+  done
   export COUNT=0
   backup_script $host_ip $host_mac $host_name | while read script ; do
 #    echo $script >> $BATCH
@@ -180,4 +200,3 @@ for script in backup_*.sh ; do
   echo ===== running $script
   ./$script
 done
-
