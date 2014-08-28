@@ -190,8 +190,8 @@ hostlist $PORT $SUBNET | while read line ; do
   backup_script $host_ip $host_mac $host_name | while read script ; do
 #    echo $script >> $BATCH
     if [ $COUNT -eq 0 ] ; then
-      [ -l "$BACKUP_MOUNTPOINT/$host_name" ] && rm $BACKUP_MOUNTPOINT/$host_name/
-      ln -s $BACKUP_DIR/$host_mac $BACKUP_MOUNTPOINT/$host_name/
+      [ -l "$BACKUP_MOUNTPOINT/$host_name" ] && rm $BACKUP_MOUNTPOINT/$host_name
+      ln -s $BACKUP_DIR/$host_mac $BACKUP_MOUNTPOINT/$host_name
     fi
     ((++COUNT))
   done
